@@ -21,3 +21,5 @@ erl_crash.dump
 
 .sqs_user
 .elixir_ls
+
+.env

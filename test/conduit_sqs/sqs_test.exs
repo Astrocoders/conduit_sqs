@@ -42,12 +42,17 @@ defmodule ConduitSQS.SQSTest do
         |> put_destination("conduit-test")
 
       use_cassette "publish" do
-        assert %{
-                 md5_of_message_attributes: "b005563a2fd67fbf2895879f0a08c2b5",
-                 md5_of_message_body: "49f68a5c8493ec2c0bf489821c21fc3b",
-                 message_id: _,
-                 request_id: _
-               } = SQS.publish(message, config, [])
+        assert {:ok,
+                %Conduit.Message{
+                  private: %{
+                    aws_sqs_response: %{
+                      md5_of_message_attributes: "b005563a2fd67fbf2895879f0a08c2b5",
+                      md5_of_message_body: "49f68a5c8493ec2c0bf489821c21fc3b",
+                      message_id: _,
+                      request_id: _
+                    }
+                  }
+                }} = SQS.publish(message, config, [])
       end
     end
   end

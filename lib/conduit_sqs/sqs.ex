@@ -48,14 +48,19 @@ defmodule ConduitSQS.SQS do
   @doc """
   Converts a Conduit message to an SQS message and publishes it
   """
-  @spec publish(Conduit.Message.t(), adapter_opts, publish_opts) :: term | no_return
+  @spec publish(Conduit.Message.t(), adapter_opts, publish_opts) :: {:ok, Conduit.Message.t()} | {:error, term()}
   def publish(%Message{body: body} = message, config, opts) do
     request_opts = Keyword.merge(config, request_opts(opts))
 
-    message.destination
-    |> Client.send_message(body, Options.from(message, opts))
-    |> ExAws.request!(request_opts)
-    |> get_in([:body])
+    case message.destination
+         |> Client.send_message(body, Options.from(message, opts))
+         |> ExAws.request(request_opts) do
+      {:ok, result} ->
+        {:ok, message |> Conduit.Message.put_private(:aws_sqs_response, result |> get_in([:body]))}
+
+      error ->
+        error
+    end
   end
 
   @doc """

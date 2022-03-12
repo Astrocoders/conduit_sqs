@@ -19,7 +19,10 @@ defmodule ConduitSQS.Mixfile do
       # Package
       description: "Amazon SQS adapter for Conduit.",
       package: package(),
-      dialyzer: [flags: ["-Werror_handling", "-Wrace_conditions"], ignore_warnings: "dialyzer.ignore-warnings"],
+      dialyzer: [
+        flags: ["-Werror_handling", "-Wrace_conditions"],
+        ignore_warnings: "dialyzer.ignore-warnings"
+      ],
 
       # Coveralls
       test_coverage: [tool: ExCoveralls],
@@ -54,7 +57,7 @@ defmodule ConduitSQS.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:conduit, "~> 0.11"},
+      {:conduit, git: "https://github.com/Astrocoders/conduit"},
       {:ex_aws, "~> 2.0"},
       {:ex_aws_sqs, "~> 2.0"},
       {:hackney, "~> 1.9"},

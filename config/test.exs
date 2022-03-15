@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :conduit, ConduitSQSTest,
   access_key_id: System.get_env("ACCESS_KEY_ID"),

@@ -88,6 +88,7 @@ defmodule ConduitSQS.SQS do
     |> Keyword.put(:max_number_of_messages, max_number_of_messages)
     |> Keyword.put_new(:attribute_names, :all)
     |> Keyword.put_new(:message_attribute_names, :all)
+    |> Keyword.put_new(:fifo_processing, false)
   end
 
   @doc """
@@ -95,9 +96,7 @@ defmodule ConduitSQS.SQS do
   """
   @spec ack_messages([delete_message_item], queue :: binary, opts :: Keyword.t()) :: {:ok, term} | {:error, term}
   def ack_messages(delete_message_items, queue, opts) do
-    queue
-    |> Client.delete_message_batch(delete_message_items)
-    |> ExAws.request(opts)
+    queue |> Client.delete_message_batch(delete_message_items) |> ExAws.request(opts)
   end
 
   defp request_opts(opts), do: Keyword.take(opts, [:region, :base_backoff_in_ms, :max_backoff_in_ms, :max_attempts])

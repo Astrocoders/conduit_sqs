@@ -145,13 +145,12 @@ defmodule ConduitSQS.PollerTest do
                  :hibernate
                }
 
-        assert_receive :get_messages, 300
+        assert_receive :get_messages, 2000
       end
     end
 
     test "when custom polling_timeout is set" do
       override Poller, sqs: SQSLess do
-
         polling_timeout = 1000
 
         state = %Poller.State{

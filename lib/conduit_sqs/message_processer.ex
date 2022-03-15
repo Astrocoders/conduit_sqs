@@ -11,15 +11,34 @@ defmodule ConduitSQS.MessageProcessor do
   Processes messages and acks successful messages
   """
   @spec process(Conduit.Adapter.broker(), atom, [Conduit.Message.t()], Keyword.t()) :: {:ok, term} | {:error, term}
+
+  def process(broker, name, messages, [fifo_processing: true] = opts) do
+    messages
+    |> Enum.reduce_while([], fn message, acc ->
+      case process_message(broker, name, message) do
+        {:ack, message} ->
+          {:cont,
+           acc ++ [%{id: get_header(message, "message_id"), receipt_handle: get_header(message, "receipt_handle")}]}
+
+        # if we are in a fifo queue, we should stop the reduction
+        # at this point to avoid processing the next messages
+        {:nack, _} ->
+          {:halt, acc}
+      end
+    end)
+    |> sqs().ack_messages(hd(messages).source, opts)
+  end
+
   def process(broker, name, messages, opts) do
     messages
-    |> Enum.map(&process_message(broker, name, &1))
-    |> Enum.filter(fn
-      {:ack, _} -> true
-      {:nack, _} -> false
-    end)
-    |> Enum.map(fn {:ack, message} ->
-      %{id: get_header(message, "message_id"), receipt_handle: get_header(message, "receipt_handle")}
+    |> Enum.reduce([], fn message, acc ->
+      case process_message(broker, name, message) do
+        {:ack, message} ->
+          acc ++ [%{id: get_header(message, "message_id"), receipt_handle: get_header(message, "receipt_handle")}]
+
+        {:nack, _message} ->
+          acc
+      end
     end)
     |> sqs().ack_messages(hd(messages).source, opts)
   end
@@ -33,7 +52,7 @@ defmodule ConduitSQS.MessageProcessor do
         {:nack, msg}
     end
   rescue
-    _ ->
+    _ex ->
       {:nack, message}
   end
 end

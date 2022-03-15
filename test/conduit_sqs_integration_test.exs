@@ -3,7 +3,7 @@ defmodule ConduitSQSIntegrationTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   alias Conduit.Message
 
-  defmodule Subscriber do
+  defmodule TestSubscriber do
     use Conduit.Subscriber
 
     def process(message, _) do
@@ -16,7 +16,7 @@ defmodule ConduitSQSIntegrationTest do
     use Conduit.Broker, otp_app: :conduit_sqs
 
     configure do
-      queue "subscription"
+      queue "subscription.fifo", fifo_queue: true
     end
 
     pipeline :out_tracking do
@@ -30,13 +30,13 @@ defmodule ConduitSQSIntegrationTest do
     outgoing do
       pipe_through [:out_tracking]
 
-      publish :sub, to: "subscription"
+      publish :sub, to: "subscription.fifo", message_group_id: "test-group-id"
     end
 
     incoming ConduitSQSIntegrationTest do
       pipe_through [:in_tracking]
 
-      subscribe :sub, :"Elixir.Subscriber", from: "subscription"
+      subscribe :sub, TestSubscriber, from: "subscription.fifo", fifo_processing: true
     end
   end
 
@@ -48,10 +48,27 @@ defmodule ConduitSQSIntegrationTest do
 
     message = Message.put_body(%Message{}, "hi")
 
-    Broker.publish(message, :sub)
+    mdid = :crypto.strong_rand_bytes(8) |> Base.encode64()
 
-    assert_receive {:process, consumed_message}, 1000
+    {:ok,
+     %Conduit.Message{
+       private: %{
+         aws_sqs_response: %{
+           message_id: message_id
+         }
+       }
+     }} = Broker.publish(message, :sub, message_deduplication_id: mdid)
+
+    assert is_binary(message_id)
+
+    assert_receive {:process, consumed_message}, 5000
 
     assert consumed_message.body == "hi"
+
+    {:messages, messages} = :erlang.process_info(self(), :messages)
+
+    for {:process, message} <- messages do
+      assert message.body == "hi"
+    end
   end
 end

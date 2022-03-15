@@ -38,8 +38,7 @@ defmodule ConduitSQS.Setup do
   end
 
   @impl true
-  def handle_info(:setup_topology, %State{broker: broker, topology: topology, opts: opts} = state) do
-    sqs().setup_topology(topology, opts)
+  def handle_info(:setup_topology, %State{broker: broker, topology: _topology, opts: _opts} = state) do
     meta().activate_pollers(broker)
 
     {:stop, :normal, state}

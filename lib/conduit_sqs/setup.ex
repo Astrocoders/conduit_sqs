@@ -50,4 +50,9 @@ defmodule ConduitSQS.Setup do
   def handle_info({:ssl_closed, {:sslsocket, {:gen_tcp, _, _, _}, _}}, state) do
     {:noreply, [], state}
   end
+
+  @impl true
+  def handle_info(_, state) do
+    {:noreply, [], state}
+  end
 end

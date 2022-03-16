@@ -117,6 +117,11 @@ defmodule ConduitSQS.Poller do
     {:noreply, [], state}
   end
 
+  @impl true
+  def handle_info(_, state) do
+    {:noreply, [], state}
+  end
+
   defp get_region(state) do
     state.subscriber_opts[:region] || state.adapter_opts[:region] || "default region"
   end

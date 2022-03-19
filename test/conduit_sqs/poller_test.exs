@@ -175,6 +175,56 @@ defmodule ConduitSQS.PollerTest do
         assert_receive :get_messages, polling_timeout + 500
       end
     end
+
+    test "check if polling is enabled via external function" do
+      override Poller, sqs: SQSEqual do
+        :ets.new(:fun_with_flags, [:set, :public, :named_table])
+        :ets.insert(:fun_with_flags, {:polling_enabled?, false})
+
+        polling_enabled? = fn ->
+          [{:polling_enabled?, flag} | _] = :ets.lookup(:fun_with_flags, :polling_enabled?)
+
+          flag
+        end
+
+        state = %Poller.State{
+          queue: "conduitsqs-test",
+          subscriber_opts: [max_number_of_messages: 5, polling_enabled?: polling_enabled?],
+          adapter_opts: [],
+          demand: 10
+        }
+
+        assert Poller.handle_info(:get_messages, state) == {
+                 :noreply,
+                 [],
+                 %Poller.State{
+                   queue: "conduitsqs-test",
+                   subscriber_opts: [max_number_of_messages: 5, polling_enabled?: polling_enabled?],
+                   adapter_opts: [],
+                   demand: 10
+                 },
+                 :hibernate
+               }
+
+        refute_received :get_messages
+
+        :ets.insert(:fun_with_flags, {:polling_enabled?, true})
+
+        assert Poller.handle_info(:get_messages, state) == {
+                 :noreply,
+                 [%Message{}, %Message{}, %Message{}, %Message{}, %Message{}],
+                 %Poller.State{
+                   queue: "conduitsqs-test",
+                   subscriber_opts: [max_number_of_messages: 5, polling_enabled?: polling_enabled?],
+                   adapter_opts: [],
+                   demand: 5
+                 },
+                 :hibernate
+               }
+
+        assert_received :get_messages
+      end
+    end
   end
 
   describe "handle_info/2 :check_active" do

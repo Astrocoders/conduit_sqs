@@ -72,30 +72,36 @@ defmodule ConduitSQS.Poller do
           {:noreply, [Conduit.Message.t()], ConduitSQS.Poller.State.t(), :hibernate}
   @spec handle_info(:check_active, ConduitSQS.Poller.State.t()) :: {:noreply, [], ConduitSQS.Poller.State.t()}
   def handle_info(:get_messages, %State{queue: queue, demand: current_demand} = state) do
+    polling_enabled? = Keyword.get(state.subscriber_opts, :polling_enabled?, fn -> true end)
+
     adapter_polling_timeout = Keyword.get(state.adapter_opts, :polling_timeout)
     subscriber_polling_timeout = Keyword.get(state.subscriber_opts, :polling_timeout)
     polling_timeout = subscriber_polling_timeout || adapter_polling_timeout || 200
 
-    fetch_limit = Keyword.get(state.subscriber_opts, :max_number_of_messages, 10)
-    max_number_of_messages = min(min(fetch_limit, current_demand), 10)
+    if polling_enabled?.() do
+      fetch_limit = Keyword.get(state.subscriber_opts, :max_number_of_messages, 10)
+      max_number_of_messages = min(min(fetch_limit, current_demand), 10)
 
-    messages = sqs().get_messages(queue, max_number_of_messages, state.subscriber_opts, state.adapter_opts)
-    handled_demand = length(messages)
+      messages = sqs().get_messages(queue, max_number_of_messages, state.subscriber_opts, state.adapter_opts)
+      handled_demand = length(messages)
 
-    new_demand = current_demand - handled_demand
+      new_demand = current_demand - handled_demand
 
-    cond do
-      new_demand == 0 ->
-        nil
+      cond do
+        new_demand == 0 ->
+          nil
 
-      handled_demand == max_number_of_messages ->
-        Process.send(self(), :get_messages, [])
+        handled_demand == max_number_of_messages ->
+          Process.send(self(), :get_messages, [])
 
-      true ->
-        Process.send_after(self(), :get_messages, polling_timeout)
+        true ->
+          Process.send_after(self(), :get_messages, polling_timeout)
+      end
+
+      {:noreply, messages, %{state | demand: new_demand}, :hibernate}
+    else
+      {:noreply, [], state, :hibernate}
     end
-
-    {:noreply, messages, %{state | demand: new_demand}, :hibernate}
   end
 
   def handle_info(:check_active, %State{broker: broker, queue: queue} = state) do

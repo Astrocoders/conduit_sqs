@@ -1,12 +1,13 @@
 [
   {
     "request": {
-      "body": "Action=SendMessage&MessageAttribute.1.Name=attempts&MessageAttribute.1.Value.DataType=Number&MessageAttribute.1.Value.StringValue=1&MessageAttribute.2.Name=ignore&MessageAttribute.2.Value.DataType=Number.boolean&MessageAttribute.2.Value.StringValue=1&MessageAttribute.3.Name=created_by&MessageAttribute.3.Value.DataType=String&MessageAttribute.3.Value.StringValue=test&MessageAttribute.4.Name=correlation_id&MessageAttribute.4.Value.DataType=String&MessageAttribute.4.Value.StringValue=1&MessageBody=hi",
+      "body": "Action=SendMessage&MessageAttribute.1.Name=attempts&MessageAttribute.1.Value.DataType=Number&MessageAttribute.1.Value.StringValue=1&MessageAttribute.2.Name=ignore&MessageAttribute.2.Value.DataType=Number.boolean&MessageAttribute.2.Value.StringValue=1&MessageAttribute.3.Name=message_group_id&MessageAttribute.3.Value.DataType=String&MessageAttribute.3.Value.StringValue=22&MessageAttribute.4.Name=created_by&MessageAttribute.4.Value.DataType=String&MessageAttribute.4.Value.StringValue=test&MessageAttribute.5.Name=correlation_id&MessageAttribute.5.Value.DataType=String&MessageAttribute.5.Value.StringValue=1&MessageBody=hi&QueueUrl=https%3A%2F%2Fsqs.us-east-1.amazonaws.com%2F652868820478%2Fsubscription",
       "headers": {
         "Authorization": "***",
         "host": "sqs.us-east-1.amazonaws.com",
         "x-amz-date": "***",
-        "content-type": "application/x-www-form-urlencoded"
+        "content-type": "application/x-www-form-urlencoded",
+        "content-encoding": "identity"
       },
       "method": "post",
       "options": {
@@ -14,17 +15,16 @@
         "recv_timeout": 30000
       },
       "request_body": "",
-      "url": "https://sqs.us-east-1.amazonaws.com/conduit-test"
+      "url": "https://sqs.us-east-1.amazonaws.com/"
     },
     "response": {
-      "body": "<?xml version=\"1.0\"?><SendMessageResponse xmlns=\"http://queue.amazonaws.com/doc/2012-11-05/\"><SendMessageResult><MessageId>9db801f4-9b13-4190-947c-672fee864a70</MessageId><MD5OfMessageBody>49f68a5c8493ec2c0bf489821c21fc3b</MD5OfMessageBody><MD5OfMessageAttributes>b005563a2fd67fbf2895879f0a08c2b5</MD5OfMessageAttributes></SendMessageResult><ResponseMetadata><RequestId>bc8c6177-252f-5403-951c-332aed4ec47e</RequestId></ResponseMetadata></SendMessageResponse>",
+      "binary": false,
+      "body": "<?xml version=\"1.0\"?><SendMessageResponse xmlns=\"http://queue.amazonaws.com/doc/2012-11-05/\"><SendMessageResult><MessageId>44db23f2-adb7-4e75-a267-8808759e5c76</MessageId><MD5OfMessageBody>49f68a5c8493ec2c0bf489821c21fc3b</MD5OfMessageBody><MD5OfMessageAttributes>da0504e68243d743924e90454985a7b3</MD5OfMessageAttributes></SendMessageResult><ResponseMetadata><RequestId>ef1e66a0-7658-518f-bb59-3c0f4ace1eac</RequestId></ResponseMetadata></SendMessageResponse>",
       "headers": {
-        "Server": "Server",
-        "Date": "Sun, 15 Oct 2017 20:33:37 GMT",
+        "x-amzn-RequestId": "ef1e66a0-7658-518f-bb59-3c0f4ace1eac",
+        "Date": "Sat, 19 Mar 2022 02:05:10 GMT",
         "Content-Type": "text/xml",
-        "Content-Length": "459",
-        "Connection": "keep-alive",
-        "x-amzn-RequestId": "bc8c6177-252f-5403-951c-332aed4ec47e"
+        "Content-Length": "459"
       },
       "status_code": 200,
       "type": "ok"

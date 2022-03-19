@@ -10,43 +10,26 @@ defmodule ConduitSQS.SQSTest do
     {:ok, %{opts: opts}}
   end
 
-  describe "setup_topology/2" do
-    test "creates no queues when topology is empty" do
-      assert SQS.setup_topology([], []) == []
-    end
-
-    @tag :capture_log
-    test "creates queues defined in topology", %{opts: opts} do
-      topology = [{:queue, "conduit-test", [receive_message_wait_time_seconds: 0]}]
-
-      use_cassette "setup_topology" do
-        assert [
-                 %{
-                   queue_url: "https://sqs.us-east-1.amazonaws.com/974419985843/conduit-test",
-                   request_id: _
-                 }
-               ] = SQS.setup_topology(topology, opts)
-      end
-    end
-  end
-
   describe "publish/3" do
     test "publish the message with all of its attributes and headers", %{opts: config} do
+      standard_queue_url = Application.get_env(:conduit_sqs, :standard_queue_url)
+
       message =
         %Message{}
         |> put_header("attempts", 1)
         |> put_header("ignore", true)
+        |> put_header("message_group_id", "22")
         |> put_created_by("test")
         |> put_correlation_id("1")
         |> put_body("hi")
-        |> put_destination("conduit-test")
+        |> put_destination(standard_queue_url)
 
       use_cassette "publish" do
         assert {:ok,
                 %Conduit.Message{
                   private: %{
                     aws_sqs_response: %{
-                      md5_of_message_attributes: "b005563a2fd67fbf2895879f0a08c2b5",
+                      md5_of_message_attributes: "da0504e68243d743924e90454985a7b3",
                       md5_of_message_body: "49f68a5c8493ec2c0bf489821c21fc3b",
                       message_id: _,
                       request_id: _
@@ -60,6 +43,8 @@ defmodule ConduitSQS.SQSTest do
   describe "get_messages/4" do
     test "returns a list of messages with attributes mapped to conduit attributes and headers", %{opts: config} do
       use_cassette "receive" do
+        fifo_queue_url = Application.get_env(:conduit_sqs, :fifo_queue_url)
+
         assert [
                  %Message{
                    body: "hi",
@@ -77,9 +62,9 @@ defmodule ConduitSQS.SQSTest do
                      "sender_id" => _,
                      "sent_timestamp" => _
                    },
-                   source: "conduit-test"
+                   source: ^fifo_queue_url
                  }
-               ] = SQS.get_messages("conduit-test", 10, [], config)
+               ] = SQS.get_messages(fifo_queue_url, 10, [], config)
       end
     end
   end

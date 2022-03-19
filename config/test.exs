@@ -1,5 +1,9 @@
 import Config
 
+config :conduit_sqs,
+  fifo_queue_url: System.get_env("FIFO_QUEUE_URL"),
+  standard_queue_url: System.get_env("STANDARD_QUEUE_URL")
+
 config :conduit, ConduitSQSTest,
   access_key_id: System.get_env("ACCESS_KEY_ID"),
   secret_access_key: System.get_env("SECRET_ACCESS_KEY")

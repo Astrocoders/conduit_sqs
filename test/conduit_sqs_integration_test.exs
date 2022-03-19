@@ -30,8 +30,8 @@ defmodule ConduitSQSIntegrationTest do
     defp standard_queue_url, do: Application.get_env(:conduit_sqs, :standard_queue_url)
 
     configure do
-      queue @fifo_queue_url
-      queue @standard_queue_url
+      queue fifo_queue_url()
+      queue standard_queue_url()
     end
 
     pipeline :out_tracking do
@@ -46,36 +46,40 @@ defmodule ConduitSQSIntegrationTest do
       pipe_through [:out_tracking]
 
       publish :sub_fifo,
-        to: @fifo_queue_url,
+        to: fifo_queue_url(),
         message_group_id: "test-group-id"
 
       publish :sub_standard,
-        to: @standard_queue_url
+        to: standard_queue_url()
     end
 
     incoming ConduitSQSIntegrationTest do
       pipe_through [:in_tracking]
 
       subscribe :sub_fifo, TestSubscriber,
-        from: @fifo_queue_url,
+        from: fifo_queue_url(),
         fifo_processing: true,
         acked_handler: &TestSubscriber.on_acked/1,
         nacked_handler: &TestSubscriber.on_nacked/1
 
       subscribe :sub_standard, TestSubscriber,
-        from: @standard_queue_url,
+        from: standard_queue_url(),
         fifo_processing: false,
         acked_handler: &TestSubscriber.on_acked/1,
         nacked_handler: &TestSubscriber.on_nacked/1
     end
   end
 
+  setup do
+    {:ok, _pid} = Broker.start_link()
+
+    :ok
+  end
+
   @tag :capture_log
   @tag :integration_test
   test "publishes messages, and consumes in a standard queue" do
     Process.register(self(), __MODULE__)
-
-    {:ok, _pid} = Broker.start_link()
 
     {:ok, _} = publish_message("ack 1", :sub_standard)
     {:ok, _} = publish_message("ack 2", :sub_standard)
@@ -98,8 +102,6 @@ defmodule ConduitSQSIntegrationTest do
   @tag :integration_test
   test "publishes messages, and consumes in a fifo queue" do
     Process.register(self(), __MODULE__)
-
-    {:ok, _pid} = Broker.start_link()
 
     {:ok, _} = publish_message("ack 1", :sub_fifo)
     {:ok, _} = publish_message("ack 2", :sub_fifo)

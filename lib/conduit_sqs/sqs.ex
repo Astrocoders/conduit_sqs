@@ -65,6 +65,7 @@ defmodule ConduitSQS.SQS do
     |> Keyword.put_new(:fifo_processing, false)
     |> Keyword.delete(:nacked_handler)
     |> Keyword.delete(:acked_handler)
+    |> Keyword.delete(:polling_enabled?)
   end
 
   @doc """

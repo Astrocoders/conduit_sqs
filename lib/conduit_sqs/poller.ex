@@ -100,6 +100,8 @@ defmodule ConduitSQS.Poller do
 
       {:noreply, messages, %{state | demand: new_demand}, :hibernate}
     else
+      Process.send_after(self(), :get_messages, polling_timeout)
+
       {:noreply, [], state, :hibernate}
     end
   end

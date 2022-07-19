@@ -5,12 +5,13 @@ defmodule ConduitSQS.MessageProcessor do
   import Injex
   alias Conduit.Message
   import Conduit.Message
-  inject :sqs, ConduitSQS.SQS
+  inject(:sqs, ConduitSQS.SQS)
 
   @doc """
   Processes messages and acks successful messages
   """
-  @spec process(Conduit.Adapter.broker(), atom, [Conduit.Message.t()], Keyword.t()) :: {:ok, term} | {:error, term}
+  @spec process(Conduit.Adapter.broker(), atom, [Conduit.Message.t()], Keyword.t()) ::
+          {:ok, term} | {:error, term}
   def process(broker, name, messages, opts) do
     fifo_processing = opts[:fifo_processing] || false
 
@@ -22,16 +23,13 @@ defmodule ConduitSQS.MessageProcessor do
     |> Enum.reduce_while([], fn message, acc ->
       case process_message(broker, name, message) do
         {:ack, message} ->
-          ack_handler(message, opts)
-
           {:cont,
-           acc ++ [%{id: get_header(message, "message_id"), receipt_handle: get_header(message, "receipt_handle")}]}
+           acc ++
+             [get_message_receipt(message)]}
 
         # if we are in a fifo queue, we should stop the reduction
         # at this point to avoid processing the next messages
-        {:nack, message} ->
-          nack_handler(message, opts)
-
+        {:nack, _message} ->
           {:halt, acc}
       end
     end)
@@ -43,13 +41,10 @@ defmodule ConduitSQS.MessageProcessor do
     |> Enum.reduce([], fn message, acc ->
       case process_message(broker, name, message) do
         {:ack, message} ->
-          ack_handler(message, opts)
+          acc ++
+            [get_message_receipt(message)]
 
-          acc ++ [%{id: get_header(message, "message_id"), receipt_handle: get_header(message, "receipt_handle")}]
-
-        {:nack, message} ->
-          nack_handler(message, opts)
-
+        {:nack, _message} ->
           acc
       end
     end)
@@ -69,20 +64,9 @@ defmodule ConduitSQS.MessageProcessor do
       {:nack, message}
   end
 
-  defp ack_handler(%Conduit.Message{} = message, opts),
-    do: maybe_call_handler(:acked_handler, message, opts)
-
-  defp nack_handler(%Conduit.Message{} = message, opts), do: maybe_call_handler(:nacked_handler, message, opts)
-
-  defp maybe_call_handler(type, argument, opts) do
-    case opts[type] do
-      handler when is_function(handler, 1) ->
-        handler.(argument)
-
-        {:ok, argument}
-
-      _ ->
-        {:ok, argument}
-    end
-  end
+  defp get_message_receipt(message),
+    do: %{
+      id: get_header(message, "message_id"),
+      receipt_handle: get_header(message, "receipt_handle")
+    }
 end

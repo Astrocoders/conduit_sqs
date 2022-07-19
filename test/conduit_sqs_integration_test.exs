@@ -13,14 +13,6 @@ defmodule ConduitSQSIntegrationTest do
         Conduit.Message.nack(message)
       end
     end
-
-    def on_acked(messages_receipts) do
-      send(ConduitSQSIntegrationTest, {:acked, messages_receipts})
-    end
-
-    def on_nacked(message) do
-      send(ConduitSQSIntegrationTest, {:nacked, message})
-    end
   end
 
   defmodule Broker do
@@ -58,15 +50,11 @@ defmodule ConduitSQSIntegrationTest do
 
       subscribe :sub_fifo, TestSubscriber,
         from: fifo_queue_url(),
-        fifo_processing: true,
-        acked_handler: &TestSubscriber.on_acked/1,
-        nacked_handler: &TestSubscriber.on_nacked/1
+        fifo_processing: true
 
       subscribe :sub_standard, TestSubscriber,
         from: standard_queue_url(),
-        fifo_processing: false,
-        acked_handler: &TestSubscriber.on_acked/1,
-        nacked_handler: &TestSubscriber.on_nacked/1
+        fifo_processing: false
     end
   end
 
@@ -88,14 +76,6 @@ defmodule ConduitSQSIntegrationTest do
     {:ok, _} = publish_message("ack 4", :sub_standard)
     {:ok, _} = publish_message("ack 5", :sub_standard)
     {:ok, _} = publish_message("ack 6", :sub_standard)
-
-    assert_receive {:acked, %Conduit.Message{body: "ack 1"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 2"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 3"}}, 5000
-    assert_receive {:nacked, %Conduit.Message{body: "nack 1"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 4"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 5"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 6"}}, 5000
   end
 
   @tag :capture_log
@@ -110,14 +90,6 @@ defmodule ConduitSQSIntegrationTest do
     {:ok, _} = publish_message("ack 4", :sub_fifo)
     {:ok, _} = publish_message("ack 5", :sub_fifo)
     {:ok, _} = publish_message("ack 6", :sub_fifo)
-
-    assert_receive {:acked, %Conduit.Message{body: "ack 1"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 2"}}, 5000
-    assert_receive {:acked, %Conduit.Message{body: "ack 3"}}, 5000
-    assert_receive {:nacked, %Conduit.Message{body: "nack 1"}}, 5000
-    refute_receive {:acked, %Conduit.Message{body: "ack 4"}}, 5000
-    refute_receive {:acked, %Conduit.Message{body: "ack 5"}}, 5000
-    refute_receive {:acked, %Conduit.Message{body: "ack 6"}}, 5000
   end
 
   defp publish_message(body, name) do
